@@ -22,22 +22,43 @@ public class AuthService {
 
     public String register(RegisterRequest request) {
 
+        // 🔎 Duplicate checks
         if (userRepository.existsByUsername(request.getUsername())) {
             return "Username already exists";
         }
 
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return "Email already exists";
+        }
 
-        // default role USER if not provided
-        UserRole role = request.getRole() == null
-                ? UserRole.USER
-                : UserRole.valueOf(request.getRole().toUpperCase());
+        if (userRepository.existsByMobileNumber(request.getMobileNumber())) {
+            return "Mobile number already exists";
+        }
+
+        // 🧱 Build User entity
+        User user = new User();
+        user.setName(request.getName());
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setMobileNumber(request.getMobileNumber());
+        user.setAddress(request.getAddress());
+
+        // 🔐 Encrypt password
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        // 👤 Role handling (default USER)
+        UserRole role;
+        try {
+            role = request.getRole() == null
+                    ? UserRole.USER
+                    : UserRole.valueOf(request.getRole().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return "Invalid role provided";
+        }
 
         user.setRole(role);
 
+        // 💾 Save user
         userRepository.save(user);
 
         return "User registered successfully";
